@@ -158,7 +158,12 @@ class ShukheeClient {
         'No auth token available to call the Shukhee backend.',
       );
     }
-    return {'X-Auth-Token': 'Bearer $token'};
+    final headers = {'X-Auth-Token': 'Bearer $token'};
+    final tenantId = await _config.tenantIdProvider?.call();
+    if (tenantId != null && tenantId.isNotEmpty) {
+      headers['tenantId'] = tenantId;
+    }
+    return headers;
   }
 
   /// Frappe whitelisted methods wrap a returned dict as `{"message": {...}}`.

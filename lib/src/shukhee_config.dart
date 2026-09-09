@@ -20,6 +20,7 @@ class ShukheeConfig {
         '/api/method/shukhee_integration.api.consultation.get_consultation_status',
     this.getPrescriptionPath =
         '/api/method/shukhee_integration.api.consultation.get_prescription',
+    this.tenantIdProvider,
     this.connectTimeout = const Duration(seconds: 10),
     this.receiveTimeout = const Duration(seconds: 15),
   });
@@ -34,6 +35,13 @@ class ShukheeConfig {
   /// already-authenticated session's token — so this SDK never needs to
   /// know how the host app logs in.
   final Future<String?> Function() authTokenProvider;
+
+  /// Returns the tenant id to send as a `tenantId` header, if the backend's
+  /// auth validation needs one (it does, once the backend's Phase-2 remote
+  /// token validation against the legacy auth-service is active — that
+  /// endpoint's own contract requires tenantId). Optional: omitted entirely
+  /// when null, so a backend that doesn't need it is unaffected.
+  final Future<String?> Function()? tenantIdProvider;
 
   final String startConsultationPath;
   final String getStatusPath;
