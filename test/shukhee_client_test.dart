@@ -83,6 +83,19 @@ void main() {
       expect(booking.isTerminal, isFalse);
     });
 
+    test('coerces a numeric call_log (autoincrement-named doctype) to a string', () async {
+      final client = _clientWith([
+        _ok({'call_log': 22285, 'call_url': 'https://call.example/join', 'status': 'confirmed'}),
+      ]);
+
+      final booking = await client.startConsultation(
+        contactNumber: '+8801000000000',
+        reason: 'Fever',
+      );
+
+      expect(booking.callLog, '22285');
+    });
+
     test('throws ShukheeBookingException when call_url is missing', () async {
       final client = _clientWith([
         _ok({'call_log': 'CL-1', 'status': 'confirmed'}),

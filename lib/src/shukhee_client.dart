@@ -71,7 +71,11 @@ class ShukheeClient {
         options: Options(headers: headers),
       );
       final data = _unwrapMessage(response.data);
-      final callLog = data['call_log'] as String?;
+      // call_log is a Call Logs doctype name -- that doctype uses
+      // autoname: "autoincrement", so its `name` is a real database integer
+      // and comes back as a JSON number, not a string. toString() coerces
+      // either shape (and any other doctype's string-series name) uniformly.
+      final callLog = data['call_log']?.toString();
       final callUrl = data['call_url'] as String?;
       final status = data['status'] as String?;
       if (callLog == null || callUrl == null || status == null) {
