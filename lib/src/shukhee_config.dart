@@ -20,6 +20,8 @@ class ShukheeConfig {
         '/api/method/shukhee_integration.api.consultation.get_consultation_status',
     this.getPrescriptionPath =
         '/api/method/shukhee_integration.api.consultation.get_prescription',
+    this.downloadDocumentPath =
+        '/api/method/shukhee_integration.api.consultation.download_document',
     this.tenantIdProvider,
     this.connectTimeout = const Duration(seconds: 10),
     this.receiveTimeout = const Duration(seconds: 15),
@@ -46,6 +48,7 @@ class ShukheeConfig {
   final String startConsultationPath;
   final String getStatusPath;
   final String getPrescriptionPath;
+  final String downloadDocumentPath;
 
   final Duration connectTimeout;
   final Duration receiveTimeout;

@@ -155,6 +155,40 @@ class ShukheeClient {
     }
   }
 
+  /// Fetches a completed consultation's prescription/invoice as raw bytes.
+  ///
+  /// The backend stores these as private files with no unauthenticated web
+  /// access, so [ShukheeStatus.prescriptionLink]/[invoiceLink] are not
+  /// directly openable URLs — they only indicate a document exists. Use
+  /// this method (authenticated the same way as every other call here) to
+  /// get the actual bytes, then write them to local storage and open with
+  /// a platform file viewer.
+  Future<ShukheeDocument> downloadDocument({
+    required String callLog,
+    required String docType,
+  }) async {
+    assert(docType == 'prescription' || docType == 'invoice');
+    final headers = await _authHeaders();
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        _config.downloadDocumentPath,
+        data: FormData.fromMap({'call_log': callLog, 'doc_type': docType}),
+        options: Options(headers: headers),
+      );
+      final data = _unwrapMessage(response.data);
+      final filename = data['filename'] as String?;
+      final contentBase64 = data['content_base64'] as String?;
+      if (filename == null || contentBase64 == null) {
+        throw const ShukheeBookingException(
+          'Malformed download_document response: missing filename/content_base64.',
+        );
+      }
+      return ShukheeDocument(filename: filename, bytes: base64Decode(contentBase64));
+    } on DioException catch (e) {
+      throw _mapError(e);
+    }
+  }
+
   Future<Map<String, String>> _authHeaders() async {
     final token = await _config.authTokenProvider();
     if (token == null || token.isEmpty) {

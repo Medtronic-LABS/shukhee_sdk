@@ -225,6 +225,45 @@ void main() {
     });
   });
 
+  group('downloadDocument', () {
+    test('decodes filename and base64 bytes', () async {
+      final content = utf8.encode('%PDF-1.4 fake pdf bytes');
+      final client = _clientWith([
+        _ok({
+          'filename': 'CL-1-prescription.pdf',
+          'content_base64': base64Encode(content),
+        }),
+      ]);
+
+      final document = await client.downloadDocument(callLog: 'CL-1', docType: 'prescription');
+
+      expect(document.filename, 'CL-1-prescription.pdf');
+      expect(document.bytes, content);
+    });
+
+    test('throws ShukheeBookingException when content_base64 is missing', () async {
+      final client = _clientWith([
+        _ok({'filename': 'CL-1-invoice.pdf'}),
+      ]);
+
+      await expectLater(
+        client.downloadDocument(callLog: 'CL-1', docType: 'invoice'),
+        throwsA(isA<ShukheeBookingException>()),
+      );
+    });
+
+    test('maps a permission error to ShukheeBookingException', () async {
+      final client = _clientWith([
+        _error(403, serverMessage: "Not permitted to access this consultation's documents."),
+      ]);
+
+      await expectLater(
+        client.downloadDocument(callLog: 'CL-1', docType: 'prescription'),
+        throwsA(isA<ShukheeBookingException>()),
+      );
+    });
+  });
+
   group('getPrescription', () {
     test('parses prescription and invoice links', () async {
       final client = _clientWith([
