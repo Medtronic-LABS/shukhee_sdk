@@ -3,7 +3,7 @@ description: >
   Flutter SDK for the Shukhee (SSK) teleconsultation integration — booking,
   status polling, and an embeddable top-level video-call WebView. Scoped to
   the 3 Shukhee consultation endpoints only; no dependency on any host app.
-version: 0.2.0
+version: 0.3.0
 homepage: https://github.com/Medtronic-LABS/shukhee_sdk
 publish_to: none
 

@@ -42,11 +42,27 @@ class ShukheeStatus {
     required this.status,
     this.prescriptionLink,
     this.invoiceLink,
+    this.doctorName,
+    this.doctorSpeciality,
+    this.doctorFacility,
   });
 
   final String status;
   final String? prescriptionLink;
   final String? invoiceLink;
+
+  /// Populated once Shukhee assigns a doctor to the request -- this can
+  /// happen before the call reaches a terminal status, so it may already be
+  /// non-null on a non-terminal poll. Null until then.
+  final String? doctorName;
+
+  /// From Shukhee's `doctor.specialty.title`.
+  final String? doctorSpeciality;
+
+  /// From Shukhee's `doctor.working_at` -- a raw facility code (e.g. "DMC"),
+  /// not a formatted facility name. Shown as-is by convention; do not
+  /// reformat it into something that looks like a real facility name.
+  final String? doctorFacility;
 
   bool get isTerminal => shukheeTerminalStatuses.contains(status);
   bool get isCompleted => status == 'completed';
@@ -54,18 +70,27 @@ class ShukheeStatus {
 
 /// Result of [ShukheeClient.getPrescription].
 class ShukheePrescription {
-  const ShukheePrescription({this.prescriptionLink, this.invoiceLink});
+  const ShukheePrescription({
+    this.prescriptionLink,
+    this.invoiceLink,
+    this.doctorName,
+    this.doctorSpeciality,
+    this.doctorFacility,
+  });
 
   final String? prescriptionLink;
   final String? invoiceLink;
+  final String? doctorName;
+  final String? doctorSpeciality;
+  final String? doctorFacility;
 }
 
 /// Result of [ShukheeClient.downloadDocument] — the actual bytes of a
 /// completed consultation's prescription or invoice. The backend stores
 /// these as private files with no unauthenticated web access, so the host
-/// app is expected to write [bytes] to local storage and open it with a
-/// platform file viewer, rather than treat [ShukheeStatus.prescriptionLink]/
-/// [ShukheeStatus.invoiceLink] as directly-openable URLs.
+/// app fetches bytes here (rather than treating [ShukheeStatus.prescriptionLink]/
+/// [ShukheeStatus.invoiceLink] as directly-openable URLs) and is expected to
+/// render/open them itself, e.g. with an in-app PDF viewer.
 class ShukheeDocument {
   const ShukheeDocument({required this.filename, required this.bytes});
 

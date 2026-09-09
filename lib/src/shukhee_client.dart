@@ -122,6 +122,9 @@ class ShukheeClient {
           status: data['status'] as String? ?? last.status,
           prescriptionLink: data['prescription_link'] as String?,
           invoiceLink: data['invoice_link'] as String?,
+          doctorName: data['doctor_name'] as String?,
+          doctorSpeciality: data['doctor_speciality'] as String?,
+          doctorFacility: data['doctor_facility'] as String?,
         );
         if (last.isTerminal) return last;
       } on DioException {
@@ -149,6 +152,9 @@ class ShukheeClient {
       return ShukheePrescription(
         prescriptionLink: data['prescription_link'] as String?,
         invoiceLink: data['invoice_link'] as String?,
+        doctorName: data['doctor_name'] as String?,
+        doctorSpeciality: data['doctor_speciality'] as String?,
+        doctorFacility: data['doctor_facility'] as String?,
       );
     } on DioException catch (e) {
       throw _mapError(e);

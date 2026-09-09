@@ -174,6 +174,23 @@ void main() {
       expect(status.invoiceLink, 'https://inv');
     });
 
+    test('parses doctor fields once Shukhee assigns a doctor, even on a non-terminal poll', () async {
+      final client = _clientWith([
+        _ok({
+          'status': 'accepted',
+          'doctor_name': 'Dr. Farzana Haque',
+          'doctor_speciality': 'Ob-Gyn',
+          'doctor_facility': 'DMC',
+        }),
+      ]);
+
+      final status = await client.pollStatus(callLog: 'CL-1', maxAttempts: 1, delayBetween: Duration.zero);
+
+      expect(status.doctorName, 'Dr. Farzana Haque');
+      expect(status.doctorSpeciality, 'Ob-Gyn');
+      expect(status.doctorFacility, 'DMC');
+    });
+
     test('keeps polling through non-terminal statuses until terminal', () async {
       final client = _clientWith([
         _ok({'status': 'confirmed'}),
@@ -274,6 +291,23 @@ void main() {
 
       expect(prescription.prescriptionLink, 'https://rx');
       expect(prescription.invoiceLink, 'https://inv');
+    });
+
+    test('parses doctor fields', () async {
+      final client = _clientWith([
+        _ok({
+          'prescription_link': 'https://rx',
+          'doctor_name': 'Dr. Farzana Haque',
+          'doctor_speciality': 'Ob-Gyn',
+          'doctor_facility': 'DMC',
+        }),
+      ]);
+
+      final prescription = await client.getPrescription(callLog: 'CL-1');
+
+      expect(prescription.doctorName, 'Dr. Farzana Haque');
+      expect(prescription.doctorSpeciality, 'Ob-Gyn');
+      expect(prescription.doctorFacility, 'DMC');
     });
 
     test('maps a not-completed error to ShukheeBookingException', () async {

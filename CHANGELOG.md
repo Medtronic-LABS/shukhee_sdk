@@ -1,3 +1,9 @@
+## 0.3.0
+
+* `ShukheeStatus`/`ShukheePrescription` gain `doctorName`/`doctorSpeciality`/`doctorFacility` --
+  Shukhee assigns a doctor to the request (sometimes before the call reaches a terminal
+  status), and the backend now surfaces those fields instead of discarding them.
+
 ## 0.2.0
 
 * Add `ShukheeClient.downloadDocument`/`ShukheeDocument` — prescription/invoice files are
