@@ -100,10 +100,16 @@ class ShukheeClient {
   /// last-seen status (terminal or not) after exhausting attempts rather
   /// than throwing, so the caller can decide how to present "still not
   /// resolved" without treating it as a hard error.
+  ///
+  /// [onUpdate], when given, is called after every successful attempt
+  /// (terminal or not) with the latest snapshot — lets a caller react to a
+  /// mid-call change (e.g. a doctor being assigned) without waiting for the
+  /// whole poll loop to finish.
   Future<ShukheeStatus> pollStatus({
     required String callLog,
     int maxAttempts = 30,
     Duration delayBetween = const Duration(seconds: 4),
+    void Function(ShukheeStatus status)? onUpdate,
   }) async {
     final headers = await _authHeaders();
     var last = const ShukheeStatus(status: 'pending');
@@ -126,6 +132,7 @@ class ShukheeClient {
           doctorSpeciality: data['doctor_speciality'] as String?,
           doctorFacility: data['doctor_facility'] as String?,
         );
+        onUpdate?.call(last);
         if (last.isTerminal) return last;
       } on DioException {
         // Transient failure — keep polling rather than aborting the whole

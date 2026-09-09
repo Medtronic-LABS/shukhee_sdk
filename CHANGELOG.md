@@ -3,6 +3,10 @@
 * `ShukheeStatus`/`ShukheePrescription` gain `doctorName`/`doctorSpeciality`/`doctorFacility` --
   Shukhee assigns a doctor to the request (sometimes before the call reaches a terminal
   status), and the backend now surfaces those fields instead of discarding them.
+* `ShukheeClient.pollStatus` gains an optional `onUpdate` callback, fired after every
+  attempt (not just the final terminal/exhausted result) -- lets a caller react to a
+  mid-call change (e.g. a doctor being assigned) without waiting for the whole poll loop
+  to finish.
 
 ## 0.2.0
 

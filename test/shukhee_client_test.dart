@@ -208,6 +208,24 @@ void main() {
       expect(status.prescriptionLink, 'https://rx');
     });
 
+    test('onUpdate fires on every attempt, terminal or not', () async {
+      final client = _clientWith([
+        _ok({'status': 'confirmed'}),
+        _ok({'status': 'accepted', 'doctor_name': 'Dr. Farzana Haque'}),
+        _ok({'status': 'completed'}),
+      ]);
+      final seen = <String>[];
+
+      await client.pollStatus(
+        callLog: 'CL-1',
+        maxAttempts: 5,
+        delayBetween: Duration.zero,
+        onUpdate: (status) => seen.add(status.status),
+      );
+
+      expect(seen, ['confirmed', 'accepted', 'completed']);
+    });
+
     test('a transient failure mid-poll does not abort the loop', () async {
       final client = _clientWith([
         _ok({'status': 'confirmed'}),
