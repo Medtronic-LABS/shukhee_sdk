@@ -1,3 +1,13 @@
+## 0.4.0
+
+* `ShukheeClient.startConsultation` gains `medias` (`List<ShukheeMediaFile>`) and
+  `documentType` (`'prescription' | 'lab_report' | 'other'`, default `'other'`) --
+  forwards to the backend's already-accepted `medias` multipart field and its now-accepted
+  `document_type` field, so a host app can attach up to a few prescription/lab-report photos
+  at booking time instead of only after the fact.
+* Add `ShukheeMediaFile` — plain filename + bytes + optional mime type, deliberately not tied
+  to any particular picker package.
+
 ## 0.3.0
 
 * `ShukheeStatus`/`ShukheePrescription` gain `doctorName`/`doctorSpeciality`/`doctorFacility` --

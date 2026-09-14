@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
+import 'package:http_parser/http_parser.dart';
 
 import 'shukhee_config.dart';
 import 'shukhee_exceptions.dart';
@@ -44,6 +45,11 @@ class ShukheeClient {
   /// platform or on Shukhee's side already) — omitting them in that case
   /// throws a [ShukheeBookingException]. Supplying them whenever available
   /// avoids that failure mode entirely.
+  ///
+  /// [medias] are attached to the request (e.g. a photographed prescription
+  /// or lab report) and tagged with [documentType], which must be one of
+  /// `'prescription' | 'lab_report' | 'other'` — matching the literal `type`
+  /// values Shukhee's own upload API accepts.
   Future<ShukheeBooking> startConsultation({
     required String contactNumber,
     required String reason,
@@ -52,17 +58,38 @@ class ShukheeClient {
     String? patientName,
     String? patientDob,
     String? patientGender,
+    List<ShukheeMediaFile> medias = const [],
+    String documentType = 'other',
   }) async {
+    assert(
+      documentType == 'prescription' ||
+          documentType == 'lab_report' ||
+          documentType == 'other',
+    );
     final headers = await _authHeaders();
     final formData = FormData.fromMap({
       'contact_number': contactNumber,
       'reason': reason,
       'requested_speciality': requestedSpeciality,
+      'document_type': documentType,
       'encounter_id': ?encounterId,
       'patient_name': ?patientName,
       'patient_dob': ?patientDob,
       'patient_gender': ?patientGender,
     });
+    for (final media in medias) {
+      formData.files.add(
+        MapEntry(
+          'medias',
+          MultipartFile.fromBytes(
+            media.bytes,
+            filename: media.filename,
+            contentType:
+                media.mimeType != null ? MediaType.parse(media.mimeType!) : null,
+          ),
+        ),
+      );
+    }
 
     try {
       final response = await _dio.post<Map<String, dynamic>>(

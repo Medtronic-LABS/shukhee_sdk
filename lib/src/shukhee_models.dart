@@ -97,3 +97,24 @@ class ShukheeDocument {
   final String filename;
   final List<int> bytes;
 }
+
+/// An in-memory file to attach to [ShukheeClient.startConsultation] (e.g. a
+/// photographed prescription or lab report). Deliberately plain bytes +
+/// filename rather than a Flutter-picker type (`XFile`) or a `dio`-specific
+/// type (`MultipartFile`) — this package has no dependency on any particular
+/// picker, and a host app can construct one trivially in tests without
+/// touching disk.
+class ShukheeMediaFile {
+  const ShukheeMediaFile({
+    required this.filename,
+    required this.bytes,
+    this.mimeType,
+  });
+
+  final String filename;
+  final List<int> bytes;
+
+  /// e.g. `'image/jpeg'`. Null lets the underlying HTTP client infer a type
+  /// from [filename].
+  final String? mimeType;
+}

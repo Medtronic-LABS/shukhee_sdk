@@ -96,6 +96,75 @@ void main() {
       expect(booking.callLog, '22285');
     });
 
+    test('sends medias and documentType as multipart fields', () async {
+      RequestOptions? captured;
+      final dio = Dio(BaseOptions(baseUrl: 'https://example.test'))
+        ..httpClientAdapter = _ScriptedAdapter([
+          (options) async {
+            captured = options;
+            return _jsonResponse(200, {
+              'message': {
+                'call_log': 'CL-1',
+                'call_url': 'https://call.example/join',
+                'status': 'confirmed',
+              },
+            });
+          },
+        ]);
+      final client = ShukheeClient(
+        ShukheeConfig(baseUrl: 'https://example.test', authTokenProvider: () async => 'test-token'),
+        dio: dio,
+      );
+
+      await client.startConsultation(
+        contactNumber: '+8801000000000',
+        reason: 'Fever',
+        documentType: 'lab_report',
+        medias: [
+          ShukheeMediaFile(
+            filename: 'report.jpg',
+            bytes: [1, 2, 3],
+            mimeType: 'image/jpeg',
+          ),
+        ],
+      );
+
+      final formData = captured!.data as FormData;
+      final documentTypeField = formData.fields.singleWhere((f) => f.key == 'document_type');
+      expect(documentTypeField.value, 'lab_report');
+      final mediaFiles = formData.files.where((f) => f.key == 'medias').toList();
+      expect(mediaFiles, hasLength(1));
+      expect(mediaFiles.single.value.filename, 'report.jpg');
+    });
+
+    test('defaults documentType to other when omitted', () async {
+      RequestOptions? captured;
+      final dio = Dio(BaseOptions(baseUrl: 'https://example.test'))
+        ..httpClientAdapter = _ScriptedAdapter([
+          (options) async {
+            captured = options;
+            return _jsonResponse(200, {
+              'message': {
+                'call_log': 'CL-1',
+                'call_url': 'https://call.example/join',
+                'status': 'confirmed',
+              },
+            });
+          },
+        ]);
+      final client = ShukheeClient(
+        ShukheeConfig(baseUrl: 'https://example.test', authTokenProvider: () async => 'test-token'),
+        dio: dio,
+      );
+
+      await client.startConsultation(contactNumber: '+8801000000000', reason: 'Fever');
+
+      final formData = captured!.data as FormData;
+      final documentTypeField = formData.fields.singleWhere((f) => f.key == 'document_type');
+      expect(documentTypeField.value, 'other');
+      expect(formData.files, isEmpty);
+    });
+
     test('throws ShukheeBookingException when call_url is missing', () async {
       final client = _clientWith([
         _ok({'call_log': 'CL-1', 'status': 'confirmed'}),
