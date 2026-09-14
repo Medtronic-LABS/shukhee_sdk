@@ -12,6 +12,19 @@ const Set<String> shukheeTerminalStatuses = {
   'on-hold',
 };
 
+/// One entry from [ShukheeClient.getSpecialities] — field names match
+/// Shukhee's own `GET /patient/emergency-request-specialities` response
+/// verbatim (`specialityId`, `title`), not a re-keyed shape, so [title] can
+/// be sent straight back as [ShukheeClient.startConsultation]'s
+/// `requestedSpeciality` with no risk of a translation/relabeling mismatch
+/// silently falling back to the wrong speciality server-side.
+class ShukheeSpeciality {
+  const ShukheeSpeciality({required this.specialityId, required this.title});
+
+  final String specialityId;
+  final String title;
+}
+
 /// Result of [ShukheeClient.startConsultation].
 class ShukheeBooking {
   const ShukheeBooking({

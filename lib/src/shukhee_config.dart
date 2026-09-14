@@ -3,7 +3,7 @@
 /// supply its own, since this SDK has no idea which backend (or which auth
 /// scheme) it's being pointed at.
 ///
-/// The three endpoint paths default to the current `frappe-uhis-next`
+/// The endpoint paths default to the current `frappe-uhis-next`
 /// `shukhee_integration` app's routes, but are overridable per-field: if a
 /// future deployment moves this behind a dedicated microservice gateway
 /// with a different path convention, only the config construction at the
@@ -14,6 +14,8 @@ class ShukheeConfig {
   const ShukheeConfig({
     required this.baseUrl,
     required this.authTokenProvider,
+    this.getSpecialitiesPath =
+        '/api/method/shukhee_integration.api.consultation.get_specialities',
     this.startConsultationPath =
         '/api/method/shukhee_integration.api.consultation.start_consultation',
     this.getStatusPath =
@@ -45,6 +47,7 @@ class ShukheeConfig {
   /// when null, so a backend that doesn't need it is unaffected.
   final Future<String?> Function()? tenantIdProvider;
 
+  final String getSpecialitiesPath;
   final String startConsultationPath;
   final String getStatusPath;
   final String getPrescriptionPath;

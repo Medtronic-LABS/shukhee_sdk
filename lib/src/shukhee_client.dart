@@ -8,10 +8,11 @@ import 'shukhee_exceptions.dart';
 import 'shukhee_models.dart';
 
 /// HTTP client for the Shukhee teleconsultation backend. Deliberately scoped
-/// to exactly the 3 endpoints the backend exposes today
-/// (`start_consultation`, `get_consultation_status`, `get_prescription`) —
-/// this is not a general-purpose API client. Adding a 4th Shukhee endpoint
-/// later is a method addition here, not a rearchitecture.
+/// to exactly the endpoints the backend exposes today (`get_specialities`,
+/// `start_consultation`, `get_consultation_status`, `get_prescription`,
+/// `download_document`) — this is not a general-purpose API client. Adding
+/// another Shukhee endpoint later is a method addition here, not a
+/// rearchitecture.
 ///
 /// Builds its own internal [Dio] instance from [ShukheeConfig.baseUrl] —
 /// never shares a host app's own HTTP client, so this package has zero
@@ -31,6 +32,35 @@ class ShukheeClient {
 
   final ShukheeConfig _config;
   final Dio _dio;
+
+  /// Live, selectable specialities for a booking form's speciality picker.
+  /// Each [ShukheeSpeciality.title] is safe to send back verbatim as
+  /// [startConsultation]'s `requestedSpeciality` -- it's the exact string
+  /// Shukhee's own speciality-matching logic expects, sourced from Shukhee
+  /// itself rather than a hardcoded guess that could drift out of sync.
+  Future<List<ShukheeSpeciality>> getSpecialities() async {
+    final headers = await _authHeaders();
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        _config.getSpecialitiesPath,
+        options: Options(headers: headers),
+      );
+      final data = _unwrapMessage(response.data);
+      final list = data['specialities'] as List<dynamic>? ?? [];
+      return list
+          .whereType<Map<String, dynamic>>()
+          .map(
+            (s) => ShukheeSpeciality(
+              specialityId: s['specialityId']?.toString() ?? '',
+              title: s['title'] as String? ?? '',
+            ),
+          )
+          .where((s) => s.title.isNotEmpty)
+          .toList();
+    } on DioException catch (e) {
+      throw _mapError(e);
+    }
+  }
 
   /// Books an instant Shukhee video consultation and returns the join URL.
   ///

@@ -7,6 +7,10 @@
   at booking time instead of only after the fact.
 * Add `ShukheeMediaFile` — plain filename + bytes + optional mime type, deliberately not tied
   to any particular picker package.
+* Add `ShukheeClient.getSpecialities`/`ShukheeSpeciality` — live specialities from Shukhee's
+  own `GET /patient/emergency-request-specialities` (via the backend's new `get_specialities`
+  endpoint), so a booking form can offer the real, current speciality list instead of a
+  hardcoded guess that could silently drift out of sync with Shukhee's own data.
 
 ## 0.3.0
 

@@ -66,6 +66,54 @@ ShukheeClient _clientWith(
 }
 
 void main() {
+  group('getSpecialities', () {
+    test('parses specialityId and title for each entry', () async {
+      final client = _clientWith([
+        _ok({
+          'specialities': [
+            {'specialityId': '1', 'title': 'General Physician'},
+            {'specialityId': '2', 'title': 'Sexual Wellness'},
+          ],
+        }),
+      ]);
+
+      final specialities = await client.getSpecialities();
+
+      expect(specialities, hasLength(2));
+      expect(specialities[0].specialityId, '1');
+      expect(specialities[0].title, 'General Physician');
+      expect(specialities[1].specialityId, '2');
+      expect(specialities[1].title, 'Sexual Wellness');
+    });
+
+    test('drops entries with no title and returns empty list when specialities key is missing', () async {
+      final client = _clientWith([
+        _ok({
+          'specialities': [
+            {'specialityId': '1', 'title': 'General Physician'},
+            {'specialityId': '2'},
+          ],
+        }),
+      ]);
+
+      final specialities = await client.getSpecialities();
+
+      expect(specialities, hasLength(1));
+      expect(specialities.single.title, 'General Physician');
+    });
+
+    test('maps a not-provisioned error to ShukheeNotProvisionedException', () async {
+      final client = _clientWith([
+        _error(404, serverMessage: 'No Provider record found for the calling user.'),
+      ]);
+
+      await expectLater(
+        client.getSpecialities(),
+        throwsA(isA<ShukheeNotProvisionedException>()),
+      );
+    });
+  });
+
   group('startConsultation', () {
     test('parses a successful booking', () async {
       final client = _clientWith([
