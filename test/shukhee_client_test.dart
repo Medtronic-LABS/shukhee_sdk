@@ -144,7 +144,7 @@ void main() {
       expect(booking.callLog, '22285');
     });
 
-    test('sends medias and documentType as multipart fields', () async {
+    test('sends each media group under its own medias_<type> multipart field', () async {
       RequestOptions? captured;
       final dio = Dio(BaseOptions(baseUrl: 'https://example.test'))
         ..httpClientAdapter = _ScriptedAdapter([
@@ -167,25 +167,29 @@ void main() {
       await client.startConsultation(
         contactNumber: '+8801000000000',
         reason: 'Fever',
-        documentType: 'lab_report',
-        medias: [
-          ShukheeMediaFile(
-            filename: 'report.jpg',
-            bytes: [1, 2, 3],
-            mimeType: 'image/jpeg',
-          ),
-        ],
+        mediaGroups: {
+          'prescription': [
+            ShukheeMediaFile(filename: 'rx.jpg', bytes: [1, 2, 3], mimeType: 'image/jpeg'),
+          ],
+          'lab_report': [
+            ShukheeMediaFile(filename: 'report.jpg', bytes: [4, 5, 6], mimeType: 'image/jpeg'),
+          ],
+        },
       );
 
       final formData = captured!.data as FormData;
-      final documentTypeField = formData.fields.singleWhere((f) => f.key == 'document_type');
-      expect(documentTypeField.value, 'lab_report');
-      final mediaFiles = formData.files.where((f) => f.key == 'medias').toList();
-      expect(mediaFiles, hasLength(1));
-      expect(mediaFiles.single.value.filename, 'report.jpg');
+      expect(formData.fields.where((f) => f.key == 'document_type'), isEmpty);
+
+      final prescriptionFiles = formData.files.where((f) => f.key == 'medias_prescription').toList();
+      expect(prescriptionFiles, hasLength(1));
+      expect(prescriptionFiles.single.value.filename, 'rx.jpg');
+
+      final labReportFiles = formData.files.where((f) => f.key == 'medias_lab_report').toList();
+      expect(labReportFiles, hasLength(1));
+      expect(labReportFiles.single.value.filename, 'report.jpg');
     });
 
-    test('defaults documentType to other when omitted', () async {
+    test('no media fields sent when mediaGroups is omitted', () async {
       RequestOptions? captured;
       final dio = Dio(BaseOptions(baseUrl: 'https://example.test'))
         ..httpClientAdapter = _ScriptedAdapter([
@@ -208,8 +212,6 @@ void main() {
       await client.startConsultation(contactNumber: '+8801000000000', reason: 'Fever');
 
       final formData = captured!.data as FormData;
-      final documentTypeField = formData.fields.singleWhere((f) => f.key == 'document_type');
-      expect(documentTypeField.value, 'other');
       expect(formData.files, isEmpty);
     });
 

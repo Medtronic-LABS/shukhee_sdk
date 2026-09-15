@@ -76,10 +76,14 @@ class ShukheeClient {
   /// throws a [ShukheeBookingException]. Supplying them whenever available
   /// avoids that failure mode entirely.
   ///
-  /// [medias] are attached to the request (e.g. a photographed prescription
-  /// or lab report) and tagged with [documentType], which must be one of
-  /// `'prescription' | 'lab_report' | 'other'` — matching the literal `type`
-  /// values Shukhee's own upload API accepts.
+  /// [mediaGroups] attaches documents to the request (e.g. photographed
+  /// prescriptions and/or lab reports in the *same* booking), keyed by
+  /// document type -- each key must be one of `'prescription' | 'lab_report'
+  /// | 'other'`, matching the literal `type` values Shukhee's own upload API
+  /// accepts. Each group is sent as its own repeated multipart field
+  /// (`medias_<type>`) since Shukhee's `/ssk/medical-document/upload` only
+  /// accepts one `type` per call -- the backend makes one upload call per
+  /// non-empty group here, tagging every file in it with that group's type.
   Future<ShukheeBooking> startConsultation({
     required String contactNumber,
     required String reason,
@@ -88,37 +92,37 @@ class ShukheeClient {
     String? patientName,
     String? patientDob,
     String? patientGender,
-    List<ShukheeMediaFile> medias = const [],
-    String documentType = 'other',
+    Map<String, List<ShukheeMediaFile>> mediaGroups = const {},
   }) async {
     assert(
-      documentType == 'prescription' ||
-          documentType == 'lab_report' ||
-          documentType == 'other',
+      mediaGroups.keys.every(
+        (t) => t == 'prescription' || t == 'lab_report' || t == 'other',
+      ),
     );
     final headers = await _authHeaders();
     final formData = FormData.fromMap({
       'contact_number': contactNumber,
       'reason': reason,
       'requested_speciality': requestedSpeciality,
-      'document_type': documentType,
       'encounter_id': ?encounterId,
       'patient_name': ?patientName,
       'patient_dob': ?patientDob,
       'patient_gender': ?patientGender,
     });
-    for (final media in medias) {
-      formData.files.add(
-        MapEntry(
-          'medias',
-          MultipartFile.fromBytes(
-            media.bytes,
-            filename: media.filename,
-            contentType:
-                media.mimeType != null ? MediaType.parse(media.mimeType!) : null,
+    for (final entry in mediaGroups.entries) {
+      for (final media in entry.value) {
+        formData.files.add(
+          MapEntry(
+            'medias_${entry.key}',
+            MultipartFile.fromBytes(
+              media.bytes,
+              filename: media.filename,
+              contentType:
+                  media.mimeType != null ? MediaType.parse(media.mimeType!) : null,
+            ),
           ),
-        ),
-      );
+        );
+      }
     }
 
     try {

@@ -1,3 +1,13 @@
+## 0.5.0
+
+* **Breaking:** `ShukheeClient.startConsultation`'s `medias`/`documentType` params are replaced
+  by a single `mediaGroups` (`Map<String, List<ShukheeMediaFile>>`, keyed by
+  `'prescription' | 'lab_report' | 'other'`) -- lets a host app attach both a prescription
+  *and* a lab report in the same booking. Each group is sent as its own repeated
+  `medias_<type>` multipart field (Shukhee's own upload API only accepts one `type` per
+  call, so the backend now makes one upload call per non-empty group instead of one call
+  for everything).
+
 ## 0.4.0
 
 * `ShukheeClient.startConsultation` gains `medias` (`List<ShukheeMediaFile>`) and
