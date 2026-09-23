@@ -1,3 +1,18 @@
+## 0.6.0
+
+* `ShukheeStatus`/`ShukheePrescription` gain `appointmentStatus` and `clinicalData` --
+  Shukhee's status-polling response now has a nested `appointment.status` (Scheduled/
+  ConsultationStarted/ConsultationEnd/Completed, Title Case) distinct from the outer,
+  lowercase `status` these two classes already expose, plus a rich `appointment.clinicalData`
+  block once completed. New `isConsultationStarted`/`isConsultationEnded` getters on
+  `ShukheeStatus` encapsulate the "at-or-past" comparison against that vocabulary --
+  prefer them over comparing `appointmentStatus` directly. Add `ShukheeClinicalData`,
+  `ShukheeMedicine`, `ShukheeMealInstruction`, `ShukheeVital` value types for the new
+  block's shape.
+* `ShukheeClient.startConsultation` gains an optional `clinicalData`
+  (`Map<String, dynamic>?`) -- forwarded to the backend's new `clinical_data` field,
+  omitted entirely (not sent as an empty object) when not provided.
+
 ## 0.5.0
 
 * **Breaking:** `ShukheeClient.startConsultation`'s `medias`/`documentType` params are replaced

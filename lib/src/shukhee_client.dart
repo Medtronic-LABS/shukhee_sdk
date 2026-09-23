@@ -84,6 +84,12 @@ class ShukheeClient {
   /// (`medias_<type>`) since Shukhee's `/ssk/medical-document/upload` only
   /// accepts one `type` per call -- the backend makes one upload call per
   /// non-empty group here, tagging every file in it with that group's type.
+  ///
+  /// [clinicalData] is optional (chiefComplaints/pastIllness/familyHistory/
+  /// menstrualHistory/vitals, matching Shukhee's own booking-time shape --
+  /// see [ShukheeClinicalData] for the read-side equivalent) -- pass a plain
+  /// `Map<String, dynamic>` mirroring that shape; omit entirely when there's
+  /// nothing to send rather than passing an empty map.
   Future<ShukheeBooking> startConsultation({
     required String contactNumber,
     required String reason,
@@ -93,6 +99,7 @@ class ShukheeClient {
     String? patientDob,
     String? patientGender,
     Map<String, List<ShukheeMediaFile>> mediaGroups = const {},
+    Map<String, dynamic>? clinicalData,
   }) async {
     assert(
       mediaGroups.keys.every(
@@ -108,6 +115,8 @@ class ShukheeClient {
       'patient_name': ?patientName,
       'patient_dob': ?patientDob,
       'patient_gender': ?patientGender,
+      if (clinicalData != null && clinicalData.isNotEmpty)
+        'clinical_data': jsonEncode(clinicalData),
     });
     for (final entry in mediaGroups.entries) {
       for (final media in entry.value) {
@@ -192,6 +201,10 @@ class ShukheeClient {
           doctorName: data['doctor_name'] as String?,
           doctorSpeciality: data['doctor_speciality'] as String?,
           doctorFacility: data['doctor_facility'] as String?,
+          appointmentStatus: data['appointment_status'] as String?,
+          clinicalData: data['clinical_data'] != null
+              ? ShukheeClinicalData.fromJson(data['clinical_data'] as Map<String, dynamic>)
+              : null,
         );
         onUpdate?.call(last);
         if (last.isTerminal) return last;
@@ -223,6 +236,10 @@ class ShukheeClient {
         doctorName: data['doctor_name'] as String?,
         doctorSpeciality: data['doctor_speciality'] as String?,
         doctorFacility: data['doctor_facility'] as String?,
+        appointmentStatus: data['appointment_status'] as String?,
+        clinicalData: data['clinical_data'] != null
+            ? ShukheeClinicalData.fromJson(data['clinical_data'] as Map<String, dynamic>)
+            : null,
       );
     } on DioException catch (e) {
       throw _mapError(e);

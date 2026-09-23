@@ -189,6 +189,74 @@ void main() {
       expect(labReportFiles.single.value.filename, 'report.jpg');
     });
 
+    test('sends clinicalData as a JSON-encoded form field when provided', () async {
+      RequestOptions? captured;
+      final dio = Dio(BaseOptions(baseUrl: 'https://example.test'))
+        ..httpClientAdapter = _ScriptedAdapter([
+          (options) async {
+            captured = options;
+            return _jsonResponse(200, {
+              'message': {
+                'call_log': 'CL-1',
+                'call_url': 'https://call.example/join',
+                'status': 'confirmed',
+              },
+            });
+          },
+        ]);
+      final client = ShukheeClient(
+        ShukheeConfig(baseUrl: 'https://example.test', authTokenProvider: () async => 'test-token'),
+        dio: dio,
+      );
+
+      await client.startConsultation(
+        contactNumber: '+8801000000000',
+        reason: 'Fever',
+        clinicalData: {
+          'vitals': [
+            {'temperature': '99'},
+          ],
+        },
+      );
+
+      final formData = captured!.data as FormData;
+      final field = formData.fields.singleWhere((f) => f.key == 'clinical_data');
+      expect(
+        jsonDecode(field.value),
+        {
+          'vitals': [
+            {'temperature': '99'},
+          ],
+        },
+      );
+    });
+
+    test('no clinical_data field sent when clinicalData is omitted', () async {
+      RequestOptions? captured;
+      final dio = Dio(BaseOptions(baseUrl: 'https://example.test'))
+        ..httpClientAdapter = _ScriptedAdapter([
+          (options) async {
+            captured = options;
+            return _jsonResponse(200, {
+              'message': {
+                'call_log': 'CL-1',
+                'call_url': 'https://call.example/join',
+                'status': 'confirmed',
+              },
+            });
+          },
+        ]);
+      final client = ShukheeClient(
+        ShukheeConfig(baseUrl: 'https://example.test', authTokenProvider: () async => 'test-token'),
+        dio: dio,
+      );
+
+      await client.startConsultation(contactNumber: '+8801000000000', reason: 'Fever');
+
+      final formData = captured!.data as FormData;
+      expect(formData.fields.where((f) => f.key == 'clinical_data'), isEmpty);
+    });
+
     test('no media fields sent when mediaGroups is omitted', () async {
       RequestOptions? captured;
       final dio = Dio(BaseOptions(baseUrl: 'https://example.test'))
@@ -376,6 +444,79 @@ void main() {
 
       expect(status.status, 'accepted');
       expect(status.isTerminal, isFalse);
+    });
+
+    test('parses appointmentStatus and derives isConsultationStarted/isConsultationEnded '
+        'across all four vendor values', () async {
+      final cases = {
+        'Scheduled': (started: false, ended: false),
+        'ConsultationStarted': (started: true, ended: false),
+        'ConsultationEnd': (started: true, ended: true),
+        'Completed': (started: true, ended: true),
+      };
+      for (final entry in cases.entries) {
+        final client = _clientWith([
+          _ok({'status': 'accepted', 'appointment_status': entry.key}),
+        ]);
+        final status = await client.pollStatus(callLog: 'CL-1', maxAttempts: 1, delayBetween: Duration.zero);
+
+        expect(status.appointmentStatus, entry.key, reason: entry.key);
+        expect(status.isConsultationStarted, entry.value.started, reason: entry.key);
+        expect(status.isConsultationEnded, entry.value.ended, reason: entry.key);
+      }
+    });
+
+    test('appointmentStatus/clinicalData null before either is present', () async {
+      final client = _clientWith([
+        _ok({'status': 'accepted'}),
+      ]);
+      final status = await client.pollStatus(callLog: 'CL-1', maxAttempts: 1, delayBetween: Duration.zero);
+
+      expect(status.appointmentStatus, isNull);
+      expect(status.clinicalData, isNull);
+      expect(status.isConsultationStarted, isFalse);
+      expect(status.isConsultationEnded, isFalse);
+    });
+
+    test('parses a full clinicalData block on a completed poll', () async {
+      final client = _clientWith([
+        _ok({
+          'status': 'completed',
+          'appointment_status': 'Completed',
+          'clinical_data': {
+            'chiefComplaints': ['fever'],
+            'diagnosis': ['Common cold'],
+            'medicine': [
+              {'brandName': 'Napa', 'dosage': '500 mg', 'frequency': '1+1+1'},
+            ],
+            'mealInstruction': [
+              {'mealType': 'Breakfast', 'instruction': '1 boiled egg'},
+            ],
+            'lastVital': {'temperature': '99', 'bloodPressure': '110/70'},
+            'followUpComment': 'review after one week',
+            // A raw JSON number, matching the real sandbox -- NOT a string.
+            // This exact shape once threw an uncaught TypeError deep inside
+            // pollStatus (not a DioException, so its own catch clause never
+            // saw it), silently killing the whole poll loop after a
+            // consultation completed. Keep this as a number here, not '7'.
+            'followUpDay': 7,
+          },
+        }),
+      ]);
+
+      final status = await client.pollStatus(callLog: 'CL-1', delayBetween: Duration.zero);
+      final data = status.clinicalData!;
+
+      expect(data.chiefComplaints, ['fever']);
+      expect(data.diagnosis, ['Common cold']);
+      expect(data.medicine, hasLength(1));
+      expect(data.medicine.single.brandName, 'Napa');
+      expect(data.mealInstruction.single.mealType, 'Breakfast');
+      expect(data.lastVital?.temperature, '99');
+      expect(data.lastVital?.bloodPressure, '110/70');
+      expect(data.followUpDay, '7');
+      expect(data.followUpComment, 'review after one week');
+      expect(data.followUpDay, '7');
     });
   });
 
