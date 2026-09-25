@@ -25,6 +25,7 @@ class ShukheeConfig {
     this.downloadDocumentPath =
         '/api/method/shukhee_integration.api.consultation.download_document',
     this.tenantIdProvider,
+    this.languageCodeProvider,
     this.connectTimeout = const Duration(seconds: 10),
     this.receiveTimeout = const Duration(seconds: 15),
   });
@@ -46,6 +47,20 @@ class ShukheeConfig {
   /// endpoint's own contract requires tenantId). Optional: omitted entirely
   /// when null, so a backend that doesn't need it is unaffected.
   final Future<String?> Function()? tenantIdProvider;
+
+  /// Returns the app's current UI language code (e.g. `"en"`/`"bn"`), sent as
+  /// the `_lang` query param on every call. Frappe's own request bootstrap
+  /// (`HTTPRequest.set_lang` → `translate.get_language()`) reads
+  /// `form_dict._lang` with top priority -- ahead of any logged-in user's own
+  /// language preference -- so every `frappe.throw(_("..."))` message this
+  /// SDK's caller (`shukhee_integration`) raises comes back already
+  /// translated into whatever language the app is currently showing, with
+  /// zero backend-side plumbing beyond that existing core mechanism. Vendor
+  /// (Shukhee)-authored error text is unaffected either way -- it's raw
+  /// third-party content, not one of our own `_()`-wrapped strings. Optional:
+  /// omitted entirely when null, so a caller that doesn't supply one is
+  /// unaffected (falls back to Frappe's own user/System Settings default).
+  final Future<String?> Function()? languageCodeProvider;
 
   final String getSpecialitiesPath;
   final String startConsultationPath;

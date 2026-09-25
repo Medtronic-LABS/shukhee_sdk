@@ -1,3 +1,16 @@
+## 0.7.0
+
+* `ShukheeConfig` gains `languageCodeProvider` -- sent as a `_lang` query
+  param on every call, read by Frappe's own request bootstrap
+  (`form_dict._lang`, top priority ahead of the logged-in user's own
+  language preference) so every one of `shukhee_integration`'s own
+  `frappe.throw(_("..."))` error messages comes back already translated
+  into whichever language the host app is currently showing -- no backend
+  code changes needed beyond that existing core mechanism. Vendor
+  (Shukhee)-authored error text is unaffected -- it's raw third-party
+  content, not one of our own translated strings. Optional: omitted
+  entirely when not supplied.
+
 ## 0.6.0
 
 * `ShukheeStatus`/`ShukheePrescription` gain `appointmentStatus` and `clinicalData` --

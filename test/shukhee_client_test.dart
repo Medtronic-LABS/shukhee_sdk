@@ -55,12 +55,14 @@ Future<ResponseBody> Function(RequestOptions) _error(int status, {String? server
 ShukheeClient _clientWith(
   List<Future<ResponseBody> Function(RequestOptions)> responses, {
   Future<String?> Function()? authTokenProvider,
+  Future<String?> Function()? languageCodeProvider,
 }) {
   final dio = Dio(BaseOptions(baseUrl: 'https://example.test'))
     ..httpClientAdapter = _ScriptedAdapter(responses);
   final config = ShukheeConfig(
     baseUrl: 'https://example.test',
     authTokenProvider: authTokenProvider ?? () async => 'test-token',
+    languageCodeProvider: languageCodeProvider,
   );
   return ShukheeClient(config, dio: dio);
 }
@@ -597,6 +599,60 @@ void main() {
         client.getPrescription(callLog: 'CL-1'),
         throwsA(isA<ShukheeBookingException>()),
       );
+    });
+  });
+
+  group('languageCodeProvider', () {
+    test('sends _lang as a query param when provided', () async {
+      String? capturedLang;
+      final client = _clientWith(
+        [
+          (options) async {
+            capturedLang = options.queryParameters['_lang'] as String?;
+            return _jsonResponse(200, {'specialities': []});
+          },
+        ],
+        languageCodeProvider: () async => 'bn',
+      );
+
+      await client.getSpecialities();
+
+      expect(capturedLang, 'bn');
+    });
+
+    test('omits _lang entirely when no languageCodeProvider is given', () async {
+      Map<String, dynamic>? capturedQuery;
+      final client = _clientWith([
+        (options) async {
+          capturedQuery = options.queryParameters;
+          return _jsonResponse(200, {'specialities': []});
+        },
+      ]);
+
+      await client.getSpecialities();
+
+      expect(capturedQuery, isNot(contains('_lang')));
+    });
+
+    test('sent on startConsultation too, not just getSpecialities', () async {
+      String? capturedLang;
+      final client = _clientWith(
+        [
+          (options) async {
+            capturedLang = options.queryParameters['_lang'] as String?;
+            return _ok({
+              'call_log': 'CL-1',
+              'call_url': 'https://call.example/1',
+              'status': 'pending',
+            })(options);
+          },
+        ],
+        languageCodeProvider: () async => 'en',
+      );
+
+      await client.startConsultation(contactNumber: '+8801000000000', reason: 'Fever');
+
+      expect(capturedLang, 'en');
     });
   });
 }

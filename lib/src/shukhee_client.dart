@@ -43,6 +43,7 @@ class ShukheeClient {
     try {
       final response = await _dio.post<Map<String, dynamic>>(
         _config.getSpecialitiesPath,
+        queryParameters: await _queryParams(),
         options: Options(headers: headers),
       );
       final data = _unwrapMessage(response.data);
@@ -138,6 +139,7 @@ class ShukheeClient {
       final response = await _dio.post<Map<String, dynamic>>(
         _config.startConsultationPath,
         data: formData,
+        queryParameters: await _queryParams(),
         options: Options(headers: headers),
       );
       final data = _unwrapMessage(response.data);
@@ -191,6 +193,7 @@ class ShukheeClient {
         final response = await _dio.post<Map<String, dynamic>>(
           _config.getStatusPath,
           data: FormData.fromMap({'call_log': callLog}),
+          queryParameters: await _queryParams(),
           options: Options(headers: headers),
         );
         final data = _unwrapMessage(response.data);
@@ -227,6 +230,7 @@ class ShukheeClient {
       final response = await _dio.post<Map<String, dynamic>>(
         _config.getPrescriptionPath,
         data: FormData.fromMap({'call_log': callLog}),
+        queryParameters: await _queryParams(),
         options: Options(headers: headers),
       );
       final data = _unwrapMessage(response.data);
@@ -264,6 +268,7 @@ class ShukheeClient {
       final response = await _dio.post<Map<String, dynamic>>(
         _config.downloadDocumentPath,
         data: FormData.fromMap({'call_log': callLog, 'doc_type': docType}),
+        queryParameters: await _queryParams(),
         options: Options(headers: headers),
       );
       final data = _unwrapMessage(response.data);
@@ -293,6 +298,16 @@ class ShukheeClient {
       headers['tenantId'] = tenantId;
     }
     return headers;
+  }
+
+  /// `_lang` query param -- see [ShukheeConfig.languageCodeProvider]'s doc
+  /// for why a query param (works uniformly across every call here
+  /// regardless of body shape -- plain POST, multipart FormData) reaches
+  /// Frappe's `form_dict._lang`, which is merged from both the query string
+  /// and the body.
+  Future<Map<String, String>> _queryParams() async {
+    final lang = await _config.languageCodeProvider?.call();
+    return lang != null && lang.isNotEmpty ? {'_lang': lang} : const {};
   }
 
   /// Frappe whitelisted methods wrap a returned dict as `{"message": {...}}`.
