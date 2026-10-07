@@ -86,6 +86,14 @@ class ShukheeClient {
   /// accepts one `type` per call -- the backend makes one upload call per
   /// non-empty group here, tagging every file in it with that group's type.
   ///
+  /// [versionId]/[lng]/[itemsChecked] carry forward the patient-consent decision captured
+  /// on the consent gate screen shown just before this one -- all optional, so a caller
+  /// predating this rollout still books successfully with an empty consent record. The
+  /// backend embeds them directly onto the Call Logs row this call creates (no separate
+  /// consent doctype, no later linking step): [versionId] is the Shukhee Consent Version
+  /// snapshot id echoed back from `get_consent`, [lng] the language it was shown in, and
+  /// [itemsChecked] a positional bool list matching that fetch's own item order.
+  ///
   /// [clinicalData] is optional (chiefComplaints/pastIllness/familyHistory/
   /// menstrualHistory/vitals, matching Shukhee's own booking-time shape --
   /// see [ShukheeClinicalData] for the read-side equivalent) -- pass a plain
@@ -101,6 +109,9 @@ class ShukheeClient {
     String? patientGender,
     Map<String, List<ShukheeMediaFile>> mediaGroups = const {},
     Map<String, dynamic>? clinicalData,
+    String? versionId,
+    String? lng,
+    List<bool>? itemsChecked,
   }) async {
     assert(
       mediaGroups.keys.every(
@@ -118,6 +129,14 @@ class ShukheeClient {
       'patient_gender': ?patientGender,
       if (clinicalData != null && clinicalData.isNotEmpty)
         'clinical_data': jsonEncode(clinicalData),
+      // The patient-consent decision captured on the gate screen just before this booking
+      // screen (see TeleconsultConsentScreen/get_consent) -- embedded directly in this same
+      // request so the backend can set it on the Call Logs row it creates in one insert,
+      // with no separate consent doctype or later linking step. All optional: a caller
+      // predating this rollout still books successfully, just with an empty consent record.
+      'version_id': ?versionId,
+      'lng': ?lng,
+      if (itemsChecked != null) 'items_checked': jsonEncode(itemsChecked),
     });
     for (final entry in mediaGroups.entries) {
       for (final media in entry.value) {

@@ -259,6 +259,71 @@ void main() {
       expect(formData.fields.where((f) => f.key == 'clinical_data'), isEmpty);
     });
 
+    test('sends versionId/lng/itemsChecked as form fields when provided', () async {
+      RequestOptions? captured;
+      final dio = Dio(BaseOptions(baseUrl: 'https://example.test'))
+        ..httpClientAdapter = _ScriptedAdapter([
+          (options) async {
+            captured = options;
+            return _jsonResponse(200, {
+              'message': {
+                'call_log': 'CL-1',
+                'call_url': 'https://call.example/join',
+                'status': 'confirmed',
+              },
+            });
+          },
+        ]);
+      final client = ShukheeClient(
+        ShukheeConfig(baseUrl: 'https://example.test', authTokenProvider: () async => 'test-token'),
+        dio: dio,
+      );
+
+      await client.startConsultation(
+        contactNumber: '+8801000000000',
+        reason: 'Fever',
+        versionId: 'VER-1',
+        lng: 'en',
+        itemsChecked: [true, false],
+      );
+
+      final formData = captured!.data as FormData;
+      expect(formData.fields.singleWhere((f) => f.key == 'version_id').value, 'VER-1');
+      expect(formData.fields.singleWhere((f) => f.key == 'lng').value, 'en');
+      expect(
+        jsonDecode(formData.fields.singleWhere((f) => f.key == 'items_checked').value),
+        [true, false],
+      );
+    });
+
+    test('no consent fields sent when versionId/lng/itemsChecked are omitted', () async {
+      RequestOptions? captured;
+      final dio = Dio(BaseOptions(baseUrl: 'https://example.test'))
+        ..httpClientAdapter = _ScriptedAdapter([
+          (options) async {
+            captured = options;
+            return _jsonResponse(200, {
+              'message': {
+                'call_log': 'CL-1',
+                'call_url': 'https://call.example/join',
+                'status': 'confirmed',
+              },
+            });
+          },
+        ]);
+      final client = ShukheeClient(
+        ShukheeConfig(baseUrl: 'https://example.test', authTokenProvider: () async => 'test-token'),
+        dio: dio,
+      );
+
+      await client.startConsultation(contactNumber: '+8801000000000', reason: 'Fever');
+
+      final formData = captured!.data as FormData;
+      expect(formData.fields.where((f) => f.key == 'version_id'), isEmpty);
+      expect(formData.fields.where((f) => f.key == 'lng'), isEmpty);
+      expect(formData.fields.where((f) => f.key == 'items_checked'), isEmpty);
+    });
+
     test('no media fields sent when mediaGroups is omitted', () async {
       RequestOptions? captured;
       final dio = Dio(BaseOptions(baseUrl: 'https://example.test'))
